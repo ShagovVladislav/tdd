@@ -16,6 +16,9 @@ public class CircularCloudLayouter
 
     public Rectangle PutNextRectangle(Size rectangleSize)
     {
+        if (rectangleSize.Width <= 0 || rectangleSize.Height <= 0)
+            throw new ArgumentException("Rectangle size must be positive", nameof(rectangleSize));
+        
         var rect = FindFreeRectangle(rectangleSize);
         rect = ShiftToCenter(rect);
         

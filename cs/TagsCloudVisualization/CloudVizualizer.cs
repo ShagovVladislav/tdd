@@ -7,7 +7,7 @@ namespace TagsCloudVisualization;
 
 public static class CloudVisualizer
 {
-    public static void Generate(string fileName, List<Size> rectSizes)
+    public static void GenerateWordsCloud(string fileName, List<Size> rectSizes)
     {
         var center = new Point(0, 0);
         var layouter = new CircularCloudLayouter(center);
