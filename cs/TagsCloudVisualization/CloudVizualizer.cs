@@ -4,10 +4,9 @@ using System.Runtime.Versioning;
 namespace TagsCloudVisualization;
 
 [SupportedOSPlatform("windows")]
-
 public static class CloudVisualizer
 {
-    public static void GenerateWordsCloud(string fileName, List<Size> rectSizes)
+    public static void GenerateRectanglesCloud(string fileName, List<Size> rectSizes)
     {
         var center = new Point(0, 0);
         var layouter = new CircularCloudLayouter(center);
@@ -20,10 +19,17 @@ public static class CloudVisualizer
         SaveLayoutImage(layouter.PlacedRectangles, fileName);
     }
     
-    private static void SaveLayoutImage(List<Rectangle> rectangles, string fileName, int padding = 50)
+    private static void SaveLayoutImage(IReadOnlyList<Rectangle> rectangles, string fileName, int padding = 50)
     {
-        if (rectangles.Count == 0)
-            return;
+        switch (rectangles.Count)
+        {
+            case 0:
+                Console.WriteLine("There are no rectangles that can be used");
+                return;
+            case >= 100000:
+                Console.WriteLine("There are too many rectangles");
+                return;
+        }
 
         var minX = rectangles.Min(r => r.Left);
         var maxX = rectangles.Max(r => r.Right);
@@ -37,9 +43,8 @@ public static class CloudVisualizer
         using var g = Graphics.FromImage(bitmap);
 
         g.Clear(Color.Black);
-
-        var random = new Random();
-
+        var colors = GenerateColorPalette(rectangles.Count - 1);
+        var colorIndex = 0;
         foreach (var rect in rectangles)
         {
             var shifted = rect with { X = rect.Left - minX + padding, Y = rect.Top - minY + padding };
@@ -48,16 +53,24 @@ public static class CloudVisualizer
                 g.FillRectangle(Brushes.Red, shifted);
                 continue;
             }
-            var color = Color.FromArgb(
-                random.Next(60, 93),
-                0,
-                random.Next(164, 255));
-
-            using var brush = new SolidBrush(color);
+            
+            using var brush = new SolidBrush(colors[colorIndex++]);
             g.FillRectangle(brush, shifted);
             g.DrawRectangle(Pens.Black, shifted);
         }
-
         bitmap.Save(fileName);
+    }
+    
+    private static Color[] GenerateColorPalette(int count)
+    {
+        var colors = new Color[count];
+        for (var i = 0; i < count; i++)
+        {
+            colors[i] = Color.FromArgb(
+                Random.Shared.Next(60, 93),
+                0,
+                Random.Shared.Next(164, 255));
+        }
+        return colors;
     }
 }

@@ -28,7 +28,6 @@ public class PutNextRectangleTests
 
         var rect = layouter.PutNextRectangle(size);
         generatedRectSizes.Add(size);
-
         rect.X.Should().Be(center.X - size.Width / 2);
         rect.Y.Should().Be(center.Y - size.Height / 2);
     }
@@ -145,7 +144,7 @@ public class PutNextRectangleTests
 
             var fullPath = Path.Combine(dir, fileName);
 
-            GenerateWordsCloud(fullPath, generatedRectSizes);
+            GenerateRectanglesCloud(fullPath, generatedRectSizes);
 
             TestContext.Out.WriteLine($"Tag cloud visualization saved to file {fullPath}");
         }

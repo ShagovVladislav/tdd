@@ -4,13 +4,14 @@ namespace TagsCloudVisualization;
 
 public class CircularCloudLayouter
 {
-    public readonly Point Center;
-    public readonly List<Rectangle> PlacedRectangles = [];
+    private readonly Point center;
+    private readonly List<Rectangle> placedRectangles = [];
+    public IReadOnlyList<Rectangle> PlacedRectangles => placedRectangles;
     private readonly Spiral spiral;
 
     public CircularCloudLayouter(Point center)
     {
-        Center = center;
+        this.center = center;
         spiral = new Spiral(center);
     }
 
@@ -19,14 +20,14 @@ public class CircularCloudLayouter
         if (rectangleSize.Width <= 0 || rectangleSize.Height <= 0)
             throw new ArgumentException("Rectangle size must be positive", nameof(rectangleSize));
         
-        var rect = FindFreeRectangle(rectangleSize);
+        var rect = FindFreeSpaceForRectangle(rectangleSize);
         rect = ShiftToCenter(rect);
         
-        PlacedRectangles.Add(rect);
+        placedRectangles.Add(rect);
         return rect;
     }
 
-    private Rectangle FindFreeRectangle(Size size)
+    private Rectangle FindFreeSpaceForRectangle(Size size)
     {
         while (true)
         {
@@ -41,12 +42,12 @@ public class CircularCloudLayouter
     private Rectangle ShiftToCenter(Rectangle rect)
     {
         rect = ShiftAxis(rect, 
-            dx: rect.X < Center.X ? 1 : -1,
+            dx: rect.X < center.X ? 1 : -1,
             dy: 0);
 
         rect = ShiftAxis(rect, 
             dx: 0,
-            dy: rect.Y < Center.Y ? 1 : -1);
+            dy: rect.Y < center.Y ? 1 : -1);
 
         return rect;
     }
@@ -71,17 +72,17 @@ public class CircularCloudLayouter
 
     private bool CrossedTheCenter(Rectangle oldRect, int dx, int dy, Rectangle shifted)
     {
-        var oldCx = oldRect.X + oldRect.Width / 2;
-        var oldCy = oldRect.Y + oldRect.Height / 2;
+        var oldCenterX = oldRect.X + oldRect.Width / 2;
+        var oldCenterY = oldRect.Y + oldRect.Height / 2;
 
-        var newCx = shifted.X + shifted.Width / 2;
-        var newCy = shifted.Y + shifted.Height / 2;
+        var newCenterX = shifted.X + shifted.Width / 2;
+        var newCenterY = shifted.Y + shifted.Height / 2;
 
         if (dx != 0)
-            return Math.Abs(newCx - Center.X) > Math.Abs(oldCx - Center.X);
+            return Math.Abs(newCenterX - center.X) > Math.Abs(oldCenterX - center.X);
 
         if (dy != 0)
-            return Math.Abs(newCy - Center.Y) > Math.Abs(oldCy - Center.Y);
+            return Math.Abs(newCenterY - center.Y) > Math.Abs(oldCenterY - center.Y);
 
         return false;
     }

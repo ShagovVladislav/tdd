@@ -5,25 +5,25 @@ namespace TagsCloudVisualization;
 public class Spiral
 {
     private readonly Point center;
-    private double angle;
+    private double currentAngle;
     private readonly double angleStep;
-    private readonly double radiusStep;
+    private readonly double radiusMultiplier;
 
-    public Spiral(Point center, double angleStep = 0.1, double radiusStep = 0.5)
+    public Spiral(Point center, double angleStep = 0.1, double radiusMultiplier = 0.5)
     {
         this.center = center;
         this.angleStep = angleStep;
-        this.radiusStep = radiusStep;
-        angle = 0;
+        this.radiusMultiplier = radiusMultiplier;
+        currentAngle = 0;
     }
 
     public Point GetNextPoint()
     {
-        var radius = radiusStep * angle;
-        var x = center.X + (int)(radius * Math.Cos(angle));
-        var y = center.Y + (int)(radius * Math.Sin(angle));
+        var radius = radiusMultiplier * currentAngle;
+        var x = center.X + (int)(radius * Math.Cos(currentAngle));
+        var y = center.Y + (int)(radius * Math.Sin(currentAngle));
 
-        angle += angleStep;
+        currentAngle += angleStep;
         return new Point(x, y);
     }
 }

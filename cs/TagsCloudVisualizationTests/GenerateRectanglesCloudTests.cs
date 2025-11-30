@@ -6,7 +6,6 @@ using TagsCloudVisualization;
 namespace TagsCloudVisualizationTests;
 
 [SupportedOSPlatform("windows")]
-
 [TestFixture]
 public class CloudVisualizerTests
 {
@@ -20,7 +19,7 @@ public class CloudVisualizerTests
     }
 
     [Test]
-    public void GenerateWordsCloud_ShouldCreateFile_WhenSizesProvided()
+    public void GenerateRectanglesCloud_ShouldCreateFile_WhenSizesProvided()
     {
         var file = Path.Combine(outputDir, "cloud.png");
         var sizes = new List<Size>
@@ -30,29 +29,29 @@ public class CloudVisualizerTests
             new(10, 40)
         };
 
-        CloudVisualizer.GenerateWordsCloud(file, sizes);
+        CloudVisualizer.GenerateRectanglesCloud(file, sizes);
 
         File.Exists(file).Should().BeTrue("visualizer must create output file");
     }
 
     [Test]
-    public void GenerateWordsCloud_ShouldNotThrow_WhenGivenEmptyList()
+    public void GenerateRectanglesCloud_ShouldNotThrow_WhenGivenEmptyList()
     {
         var file = Path.Combine(outputDir, "empty.png");
 
-        var act = () => CloudVisualizer.GenerateWordsCloud(file, []);
+        var act = () => CloudVisualizer.GenerateRectanglesCloud(file, []);
 
         act.Should().NotThrow("empty list shouldn't cause failures");
         File.Exists(file).Should().BeFalse("empty input should not produce image");
     }
 
     [Test]
-    public void GenerateWordsCloud_ShouldProduceNonEmptyImage()
+    public void GenerateRectanglesCloud_ShouldProduceNonEmptyImage()
     {
         var file = Path.Combine(outputDir, "nonempty.png");
         var sizes = new List<Size> { new(100, 50), new(30, 30) };
 
-        CloudVisualizer.GenerateWordsCloud(file, sizes);
+        CloudVisualizer.GenerateRectanglesCloud(file, sizes);
 
         var fileInfo = new FileInfo(file);
         
@@ -61,12 +60,12 @@ public class CloudVisualizerTests
     }
 
     [Test]
-    public void GenerateWordsCloud_ShouldProduceValidPng()
+    public void GenerateRectanglesCloud_ShouldProduceValidPng()
     {
         var file = Path.Combine(outputDir, "valid.png");
         var sizes = new List<Size> { new(80, 40) };
 
-        CloudVisualizer.GenerateWordsCloud(file, sizes);
+        CloudVisualizer.GenerateRectanglesCloud(file, sizes);
 
         using var bmp = new Bitmap(file);
 
@@ -75,7 +74,7 @@ public class CloudVisualizerTests
     }
 
     [Test]
-    public void GenerateWordsCloud_ShouldUseAllSizes()
+    public void GenerateRectanglesCloud_ShouldUseAllSizes()
     {
         var file = Path.Combine(outputDir, "count_check.png");
         var sizes = new List<Size>
@@ -85,7 +84,7 @@ public class CloudVisualizerTests
             new(30,30)
         };
 
-        CloudVisualizer.GenerateWordsCloud(file, sizes);
+        CloudVisualizer.GenerateRectanglesCloud(file, sizes);
 
         var layouter = new CircularCloudLayouter(new Point(0, 0));
         foreach (var size in sizes)
@@ -95,7 +94,7 @@ public class CloudVisualizerTests
     }
 
     [Test]
-    public void GenerateWordsCloud_ShouldHandleLargeAmountOfRects()
+    public void GenerateRectanglesCloud_ShouldHandleLargeAmountOfRects()
     {
         var file = Path.Combine(outputDir, "many.png");
 
@@ -104,32 +103,9 @@ public class CloudVisualizerTests
             .Select(i => new Size(i % 40 + 10, i % 30 + 10))
             .ToList();
 
-        var act = () => CloudVisualizer.GenerateWordsCloud(file, sizes);
+        var act = () => CloudVisualizer.GenerateRectanglesCloud(file, sizes);
 
         act.Should().NotThrow();
         File.Exists(file).Should().BeTrue();
-    }
-
-    [Test, Explicit]
-    public void VizualizeExamples()
-    {
-        var file1 = Path.Combine(outputDir, "example1.png");
-        var file2 = Path.Combine(outputDir, "example2.png");
-        var file3 = Path.Combine(outputDir, "example3.png");
-        var sizes1 = Enumerable
-            .Range(1, 500)
-            .Select(i => new Size(i % 40 + 10, i % 30 + 10))
-            .ToList();
-        var sizes2 = Enumerable
-            .Range(1, 100)
-            .Select(i => new Size(i % 60 + 10, i % 20 + 10))
-            .ToList();
-        var sizes3 = Enumerable
-            .Range(1, 50)
-            .Select(i => new Size(i % 40 + 10, i % 70 + 10))
-            .ToList();
-        CloudVisualizer.GenerateWordsCloud(file1, sizes1);
-        CloudVisualizer.GenerateWordsCloud(file2, sizes2);
-        CloudVisualizer.GenerateWordsCloud(file3, sizes3);
     }
 }
