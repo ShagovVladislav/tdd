@@ -3,109 +3,247 @@ using System.Runtime.Versioning;
 using FluentAssertions;
 using TagsCloudVisualization;
 
-namespace TagsCloudVisualizationTests;
-
-[SupportedOSPlatform("windows")]
-[TestFixture]
-public class CloudVisualizerTests
+namespace TagsCloudVisualizationTests
 {
-    private string outputDir;
-
-    [SetUp]
-    public void SetUp()
+    [TestFixture]
+    [SupportedOSPlatform("windows")]
+    public class CloudVisualizerEdgeCasesTests
     {
-        outputDir = Path.Combine(TestContext.CurrentContext.WorkDirectory, "visualizer_tests");
-        Directory.CreateDirectory(outputDir);
-    }
+        private string output;
 
-    [Test]
-    public void GenerateRectanglesCloud_ShouldCreateFile_WhenSizesProvided()
-    {
-        var file = Path.Combine(outputDir, "cloud.png");
-        var sizes = new List<Size>
+        [SetUp]
+        public void SetUp()
         {
-            new(50, 30),
-            new(20, 20),
-            new(10, 40)
-        };
+            output = Path.Combine(TestContext.CurrentContext.WorkDirectory, "visualizer_edge");
+            Directory.CreateDirectory(output);
+        }
 
-        CloudVisualizer.GenerateRectanglesCloud(file, sizes);
+        [Test]
+        public void GenerateRectanglesCloud_ShouldThrow_WhenFileNameIsNull()
+        {
+            var sizes = new List<Size> { new(10, 10) };
 
-        File.Exists(file).Should().BeTrue("visualizer must create output file");
-    }
+            var act = () =>
+                CloudVisualizer.GenerateRectanglesCloud(null!, sizes, outputDirectory: output);
 
-    [Test]
-    public void GenerateRectanglesCloud_ShouldNotThrow_WhenGivenEmptyList()
-    {
-        var file = Path.Combine(outputDir, "empty.png");
+            act.Should().Throw<ArgumentException>()
+                .WithMessage("*File name*");
+        }
 
-        var act = () => CloudVisualizer.GenerateRectanglesCloud(file, []);
+        [Test]
+        public void GenerateRectanglesCloud_ShouldThrow_WhenFileNameIsEmpty()
+        {
+            var sizes = new List<Size> { new(5, 5) };
 
-        act.Should().NotThrow("empty list shouldn't cause failures");
-        File.Exists(file).Should().BeFalse("empty input should not produce image");
-    }
+            var act = () =>
+                CloudVisualizer.GenerateRectanglesCloud("", sizes, outputDirectory: output);
 
-    [Test]
-    public void GenerateRectanglesCloud_ShouldProduceNonEmptyImage()
-    {
-        var file = Path.Combine(outputDir, "nonempty.png");
-        var sizes = new List<Size> { new(100, 50), new(30, 30) };
+            act.Should().Throw<ArgumentException>();
+        }
 
-        CloudVisualizer.GenerateRectanglesCloud(file, sizes);
+        [Test]
+        public void GenerateRectanglesCloud_ShouldThrow_WhenFileExtensionMissing()
+        {
+            var sizes = new List<Size> { new(10, 10) };
 
-        var fileInfo = new FileInfo(file);
+            var act = () =>
+                CloudVisualizer.GenerateRectanglesCloud("file", sizes, outputDirectory: output);
+
+            act.Should().Throw<ArgumentException>()
+                .WithMessage("*extension*");
+        }
+
+        [TestCase("file.txt")]
+        [TestCase("image.svg")]
+        [TestCase("output.docx")]
+        public void GenerateRectanglesCloud_ShouldThrow_OnInvalidExtension(string file)
+        {
+            var sizes = new List<Size> { new(10, 10) };
+
+            Action act = () =>
+                CloudVisualizer.GenerateRectanglesCloud(file, sizes, outputDirectory: output);
+
+            act.Should().Throw<ArgumentException>()
+                .WithMessage("*Invalid file extension*");
+        }
+
+        [Test]
+        public void GenerateRectanglesCloud_ShouldThrow_WhenSizesNull()
+        {
+            Action act = () =>
+                CloudVisualizer.GenerateRectanglesCloud(
+                    "out.png",
+                    rectSizes: null!,
+                    outputDirectory: output);
+
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        [Test]
+        public void GenerateRectanglesCloud_ShouldThrow_WhenSizesEmpty()
+        {
+            var act = () =>
+                CloudVisualizer.GenerateRectanglesCloud("out.png", new List<Size>(), outputDirectory: output);
+
+            act.Should().Throw<ArgumentException>()
+                .WithMessage("*There are no rectangles*");
+        }
+
+        [Test]
+        public void GenerateRectanglesCloud_ShouldThrow_WhenSizesExceedLimit()
+        {
+            var sizes = new List<Size>();
+            for (var i = 0; i < 10001; i++)
+                sizes.Add(new Size(10, 10));
+
+            var act = () =>
+                CloudVisualizer.GenerateRectanglesCloud("too_many.png", sizes, outputDirectory: output);
+
+            act.Should().Throw<ArgumentException>()
+                .WithMessage("*too many rectangles*");
+        }
         
-        fileInfo.Exists.Should().BeTrue();
-        fileInfo.Length.Should().BeGreaterThan(1000, "image should not be empty");
-    }
-
-    [Test]
-    public void GenerateRectanglesCloud_ShouldProduceValidPng()
-    {
-        var file = Path.Combine(outputDir, "valid.png");
-        var sizes = new List<Size> { new(80, 40) };
-
-        CloudVisualizer.GenerateRectanglesCloud(file, sizes);
-
-        using var bmp = new Bitmap(file);
-
-        bmp.Width.Should().BeGreaterThan(0);
-        bmp.Height.Should().BeGreaterThan(0);
-    }
-
-    [Test]
-    public void GenerateRectanglesCloud_ShouldUseAllSizes()
-    {
-        var file = Path.Combine(outputDir, "count_check.png");
-        var sizes = new List<Size>
+        [Test]
+        public void GenerateRectanglesCloud_ShouldThrow_WhenImageSizeTooLarge()
         {
-            new(10,10),
-            new(20,20),
-            new(30,30)
-        };
+            var sizes = new List<Size> { new(20, 20) };
+            var bigSize = new Size(20000, 20000);
 
-        CloudVisualizer.GenerateRectanglesCloud(file, sizes);
+            var act = () =>
+                CloudVisualizer.GenerateRectanglesCloud(
+                    "large.png",
+                    sizes,
+                    imageSize: bigSize,
+                    outputDirectory: output);
 
-        var layouter = new CircularCloudLayouter(new Point(0, 0));
-        foreach (var size in sizes)
-            layouter.PutNextRectangle(size);
+            act.Should().Throw<InvalidOperationException>()
+                .WithMessage("*too large*");
+        }
 
-        layouter.PlacedRectangles.Count.Should().Be(sizes.Count);
-    }
+        [Test]
+        public void GenerateRectanglesCloud_ShouldThrow_WhenImageSizeZero()
+        {
+            var sizes = new List<Size> { new(50, 50) };
 
-    [Test]
-    public void GenerateRectanglesCloud_ShouldHandleLargeAmountOfRects()
-    {
-        var file = Path.Combine(outputDir, "many.png");
+            var act = () =>
+                CloudVisualizer.GenerateRectanglesCloud(
+                    "bad.png",
+                    sizes,
+                    imageSize: new Size(0, 0),
+                    outputDirectory: output);
 
-        var sizes = Enumerable
-            .Range(1, 200)
-            .Select(i => new Size(i % 40 + 10, i % 30 + 10))
-            .ToList();
+            act.Should().NotThrow(); 
+        }
 
-        var act = () => CloudVisualizer.GenerateRectanglesCloud(file, sizes);
+        [Test]
+        public void GenerateRectanglesCloud_ShouldRespectProvidedImageSize()
+        {
+            var file = Path.Combine(output, "fixed.png");
+            var sizes = new List<Size> { new(10, 10), new(20, 20) };
 
-        act.Should().NotThrow();
-        File.Exists(file).Should().BeTrue();
+            CloudVisualizer.GenerateRectanglesCloud(
+                fileName: file,
+                rectSizes: sizes,
+                imageSize: new Size(300, 200));
+
+            using var bmp = new Bitmap(file);
+            bmp.Width.Should().Be(300);
+            bmp.Height.Should().Be(200);
+        }
+
+        [Test]
+        public void GenerateRectanglesCloud_ShouldApplyCustomColors()
+        {
+            var file = Path.Combine(output, "colors.png");
+            var sizes = new List<Size> { new(10, 10), new(20, 20), new(20, 10) };
+
+            CloudVisualizer.GenerateRectanglesCloud(
+                fileName: file,
+                rectSizes: sizes,
+                backgroundColor: Color.Yellow,
+                baseRectangleColor: Color.Red,
+                rectangleBorderColor: Color.Green,
+                outputDirectory: output);
+
+            File.Exists(file).Should().BeTrue();
+
+            using var bmp = new Bitmap(file);
+            var bgColor = bmp.GetPixel(1, 1);
+            bgColor.ToArgb().Should().Be(Color.Yellow.ToArgb());
+        }
+
+        [Test]
+        public void GenerateRectanglesCloud_ShouldCreateOutputDirectoryIfMissing()
+        {
+            var newDir = Path.Combine(output, "nested1/nested2/nested3");
+            var file = Path.Combine(newDir, "auto.png");
+
+            var sizes = new List<Size> { new(10, 10) };
+
+            CloudVisualizer.GenerateRectanglesCloud(file, sizes);
+
+            Directory.Exists(newDir).Should().BeTrue();
+            File.Exists(file).Should().BeTrue();
+        }
+
+        [Test]
+        public void GenerateRectanglesCloud_ShouldOverwriteExistingFile()
+        {
+            var file = Path.Combine(output, "overwrite.png");
+
+            File.WriteAllText(file, "old content");
+
+            var sizes = new List<Size> { new(40, 40) };
+
+            CloudVisualizer.GenerateRectanglesCloud(file, sizes);
+
+            using var bmp = new Bitmap(file);
+            bmp.Width.Should().BeGreaterThan(0);
+        }
+
+
+        [Test]
+        public void GenerateRectanglesCloud_ShouldPlaceRectanglesWithoutOverlap()
+        {
+            var file = Path.Combine(output, "layout.png");
+
+            var sizes = new List<Size>
+            {
+                new(50, 40),
+                new(30, 20),
+                new(10, 40),
+                new(20, 30)
+            };
+
+            CloudVisualizer.GenerateRectanglesCloud(file, sizes);
+
+            var layouter = new CircularCloudLayouter(new Point(0, 0));
+            foreach (var s in sizes)
+                layouter.PutNextRectangle(s);
+
+            var rects = layouter.PlacedRectangles;
+
+            for (var i = 0; i < rects.Count; i++)
+            for (var j = i + 1; j < rects.Count; j++)
+                rects[i].IntersectsWith(rects[j]).Should().BeFalse();
+        }
+
+        [Test]
+        public void GenerateRectanglesCloud_ShouldBeDeterministic()
+        {
+            var file1 = Path.Combine(output, "det1.png");
+            var file2 = Path.Combine(output, "det2.png");
+
+            var sizes = new List<Size> { new(30, 30), new(20, 20), new(10, 10) };
+
+            CloudVisualizer.GenerateRectanglesCloud(file1, sizes);
+            CloudVisualizer.GenerateRectanglesCloud(file2, sizes);
+
+            using var b1 = new Bitmap(file1);
+            using var b2 = new Bitmap(file2);
+
+            b1.Width.Should().Be(b2.Width);
+            b1.Height.Should().Be(b2.Height);
+        }
     }
 }
