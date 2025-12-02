@@ -52,7 +52,7 @@ public class PutNextRectangleEdgeCasesTests
         generatedRectSizes.Add(size);
 
         act.Should().Throw<ArgumentException>()
-            .WithMessage("Rectangle size must be positive");
+            .WithMessage("Rectangle width must be positive");
     }
 
     [Test]
@@ -65,7 +65,7 @@ public class PutNextRectangleEdgeCasesTests
         generatedRectSizes.Add(size);
 
         act.Should().Throw<ArgumentException>()
-            .WithMessage("*Rectangle size must be positive*");
+            .WithMessage("*Rectangle height must be positive*");
     }
 
     [Test]
