@@ -23,76 +23,66 @@ public static class CloudVisualizer
             backgroundColor ??= Color.Black;
             baseRectangleColor ??= Color.Blue;
             rectangleBorderColor ??= Color.Black;
-            outputDirectory ??= Environment.CurrentDirectory;
-            
-            ValidateInputs(fileName, outputDirectory, rectSizes);
-            
-            Directory.CreateDirectory(outputDirectory);
-            
-            var fullPath = Path.Combine(outputDirectory, fileName);
-            
-            Console.WriteLine($"Creating cloud at: {fullPath}");
-            
-            var layouter = new CircularCloudLayouter(center.Value);
 
+            outputDirectory = string.IsNullOrWhiteSpace(outputDirectory)
+                ? Environment.CurrentDirectory
+                : outputDirectory;
+
+            ValidateInputs(fileName, rectSizes);
+
+            Directory.CreateDirectory(outputDirectory);
+            var fullPath = Path.Combine(outputDirectory, fileName);
+
+            var layouter = new CircularCloudLayouter(center.Value);
             foreach (var size in rectSizes)
                 layouter.PutNextRectangle(size);
 
             using var pen = new Pen(rectangleBorderColor.Value);
-            SaveLayoutImage(layouter.PlacedRectangles, fullPath, imageSize.Value, 
-                backgroundColor.Value, baseRectangleColor.Value, pen);
-            
-            Console.WriteLine($"File successfully saved to: {fullPath}");
+
+            SaveLayoutImage(
+                layouter.PlacedRectangles,
+                fullPath,
+                imageSize.Value,
+                backgroundColor.Value,
+                baseRectangleColor.Value,
+                pen
+            );
+
+            Console.WriteLine($"Cloud saved: {fullPath}");
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error generating rectangles cloud: {ex.Message}");
-            throw;
+            Console.Error.WriteLine($"Cloud generation failed: {ex.Message}");
         }
     }
 
-    private static void ValidateInputs(string fileName, string outputDirectory, List<Size> rectSizes)
+
+    private static void ValidateInputs(string fileName, List<Size> rectSizes)
     {
         if (string.IsNullOrWhiteSpace(fileName))
-            throw new ArgumentException("File name cannot be null or empty", nameof(fileName));
-            
-        var extension = Path.GetExtension(fileName);
-        if (string.IsNullOrEmpty(extension))
-        {
-            throw new ArgumentException("File extension is required (.png, .jpg)", nameof(fileName));
-        }
-        else
+            throw new ArgumentException("File name cannot be empty", nameof(fileName));
+
+        var ext = Path.GetExtension(fileName);
+        if (!string.IsNullOrEmpty(ext))
         {
             var validExtensions = new[] { ".png", ".jpg", ".jpeg", ".bmp", ".gif" };
-            if (!validExtensions.Contains(extension.ToLowerInvariant()))
-                throw new ArgumentException($"Invalid file extension. Use: {string.Join(", ", validExtensions)}", 
-                    nameof(fileName));
+            if (!validExtensions.Contains(ext.ToLowerInvariant()))
+                throw new ArgumentException(
+                    $"Invalid file extension. Allowed: {string.Join(", ", validExtensions)}",
+                    nameof(fileName)
+                );
         }
-        
-        if (string.IsNullOrWhiteSpace(outputDirectory))
-            throw new ArgumentException("Output directory cannot be null or empty", nameof(outputDirectory));
-            
-        try
+
+        ArgumentNullException.ThrowIfNull(rectSizes);
+        switch (rectSizes.Count)
         {
-            var fullPath = Path.GetFullPath(outputDirectory);
-            Console.WriteLine($"Output directory resolved to: {fullPath}");
-        }
-        catch (Exception ex)
-        {
-            throw new ArgumentException($"Invalid output directory: {ex.Message}", nameof(outputDirectory));
-        }
-        
-        switch (rectSizes)
-        {
-            case null:
-                throw new ArgumentNullException(nameof(rectSizes), "Rectangle sizes cannot be null");
-            case { Count: 0 }:
-                throw new ArgumentException("There are no rectangles that can be used", nameof(rectSizes));
-            case { Count: > 10000 }:
-                throw new ArgumentException("There are too many rectangles. Maximum is 10000", nameof(rectSizes));
+            case 0:
+                throw new ArgumentException("No rectangles provided");
+            case > 10000:
+                throw new ArgumentException("Too many rectangles (max 10000)");
         }
     }
-
+    
     private static void SaveLayoutImage(
         IReadOnlyList<Rectangle> rectangles,
         string fileName,

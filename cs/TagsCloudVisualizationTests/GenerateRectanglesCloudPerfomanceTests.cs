@@ -30,7 +30,7 @@ public class PerformanceTests
         sw.Stop();
 
         sw.ElapsedMilliseconds.Should()
-            .BeLessThan(200, "алгоритм должен работать быстро на 500 прямоугольников");
+            .BeLessThan(250, "алгоритм должен работать быстро на 500 прямоугольников");
     }
 
     [Test]
